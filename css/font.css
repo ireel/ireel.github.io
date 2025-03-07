@@ -3,6 +3,11 @@
     font-display: swap;
     src: url('../font/AliceInWonderland.ttf') format("truetype");
 }
-body {
+h1 {
+    font-family: 'Alice';
+    font-size: 30px;
+}
+
+.site-name {
     font-family: 'Alice';
 }
